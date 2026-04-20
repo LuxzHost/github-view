@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Repo Viewer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --line: #334155;
+      --accent: #2563eb;
+      --accent-2: #1d4ed8;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #020617 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 28px 18px 48px; }
+    .hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .title { font-size: 32px; font-weight: 800; margin: 0 0 8px; }
+    .subtitle { margin: 0; color: var(--muted); line-height: 1.5; }
+    .card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.22);
+      backdrop-filter: blur(10px);
+    }
+    .notice { border-left: 4px solid var(--warning); margin-bottom: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 16px 0; }
+    .grid-repos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .stat-label { color: var(--muted); font-size: 14px; }
+    .stat-value { font-size: 32px; font-weight: 800; margin-top: 8px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    input[type="password"], input[type="text"] {
+      width: 100%; background: #0b1220; color: var(--text); border: 1px solid var(--line);
+      border-radius: 14px; padding: 14px 14px; outline: none; font-size: 14px;
+    }
+    input::placeholder { color: #64748b; }
+    .btn {
+      background: var(--accent); color: white; border: 0; border-radius: 14px; padding: 12px 16px;
+      font-weight: 700; cursor: pointer; transition: .18s ease; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn:hover { background: var(--accent-2); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn.secondary { background: transparent; border: 1px solid var(--line); color: var(--text); }
+    .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+    .repo-card { min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+    .repo-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .repo-title { font-size: 18px; font-weight: 800; margin: 0 0 8px; word-break: break-word; }
+    .repo-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; min-height: 42px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+    .badge { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #cbd5e1; background: #0b1220; }
+    .badge.private { border-color: #7c2d12; background: #431407; }
+    .badge.public { border-color: #14532d; background: #052e16; }
+    .meta { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+    .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+    .repo-link { color: #bfdbfe; text-decoration: none; font-size: 14px; font-weight: 700; }
+    .repo-link:hover { text-decoration: underline; }
+    .error { color: #fca5a5; margin-top: 10px; }
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .checkbox { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+    .footer-note { margin-top: 18px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 980px) {
+      .grid-3, .grid-repos { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .hero { flex-direction: column; }
+      .grid-3, .grid-repos, .toolbar, .actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div>
+        <h1 class="title">GitHub Repo Viewer</h1>
+        <p class="subtitle">Lihat semua repo yang bisa kamu akses, cari repo, unduh ZIP, dan salin perintah clone. Cocok untuk static deploy seperti Vercel.</p>
+      </div>
+    </div>
+
+    <div class="card notice">
+      <strong>Catatan keamanan</strong>
+      <div class="subtitle" style="margin-top:8px;">Token GitHub dimasukkan langsung di browser. Aman untuk pemakaian pribadi, tapi jangan sebarkan link situs ini ke publik karena pengunjung bisa memakai token mereka sendiri di halaman ini.</div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Akses GitHub</h2>
+      <div class="row" style="margin-top:12px;">
+        <input id="tokenInput" type="password" placeholder="Tempel GitHub Personal Access Token di sini" />
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button id="fetchBtn" class="btn">Ambil semua repo</button>
+        <button id="resetBtn" class="btn secondary">Reset</button>
+      </div>
+      <div id="errorBox" class="error"></div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card"><div class="stat-label">Total repo</div><div class="stat-value" id="totalCount">0</div></div>
+      <div class="card"><div class="stat-label">Public</div><div class="stat-value" id="publicCount">0</div></div>
+      <div class="card"><div class="stat-label">Private</div><div class="stat-value" id="privateCount">0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input id="searchInput" type="text" placeholder="Cari nama repo, owner, bahasa, deskripsi..." />
+        <label class="checkbox"><input id="forksInput" type="checkbox" checked /> Tampilkan fork</label>
+        <button id="downloadAllBtn" class="btn secondary">Download semua ZIP</button>
+      </div>
+      <div class="footer-note">Tip: untuk repo private, tombol clone akan menyalin URL clone dengan token.</div>
+    </div>
+
+    <div id="repoGrid" class="grid-repos"></div>
+    <div id="emptyState" class="card empty" style="display:none;">Belum ada repo yang ditampilkan.</div>
+  </div>
+
+  <script>
+    const state = { repos: [], filtered: [], downloadingAll: false };
+    const tokenInput = document.getElementById('tokenInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const errorBox = document.getElementById('errorBox');
+    const searchInput = document.getElementById('searchInput');
+    const forksInput = document.getElementById('forksInput');
+    const repoGrid = document.getElementById('repoGrid');
+    const emptyState = document.getElementById('emptyState');
+    const totalCount = document.getElementById('totalCount');
+    const publicCount = document.getElementById('publicCount');
+    const privateCount = document.getElementById('privateCount');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+    function setError(message) { errorBox.textContent = message || ''; }
+    function setLoading(loading) {
+      fetchBtn.disabled = loading || !tokenInput.value.trim();
+      fetchBtn.textContent = loading ? 'Mengambil repo...' : 'Ambil semua repo';
+    }
+
+    function updateCounts() {
+      totalCount.textContent = state.repos.length;
+      publicCount.textContent = state.repos.filter(r => !r.private).length;
+      privateCount.textContent = state.repos.filter(r => r.private).length;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function filterRepos() {
+      const q = searchInput.value.trim().toLowerCase();
+      const includeForks = forksInput.checked;
+      state.filtered = state.repos
+        .filter(repo => includeForks ? true : !repo.fork)
+        .filter(repo => {
+          if (!q) return true;
+          return (
+            (repo.name || '').toLowerCase().includes(q) ||
+            (repo.full_name || '').toLowerCase().includes(q) ||
+            (repo.language || '').toLowerCase().includes(q) ||
+            (repo.description || '').toLowerCase().includes(q)
+          );
+        });
+      renderRepos();
+    }
+
+    function renderRepos() {
+      repoGrid.innerHTML = '';
+      if (!state.filtered.length) {
+        emptyState.style.display = 'block';
+        emptyState.textContent = state.repos.length ? 'Tidak ada repo yang cocok dengan pencarian.' : 'Belum ada repo yang ditampilkan.';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      state.filtered.forEach(repo => {
+        const card = document.createElement('div');
+        card.className = 'card repo-card';
+        const updated = new Date(repo.updated_at).toLocaleString();
+        card.innerHTML = `
+          <div>
+            <div class="repo-head">
+              <div>
+                <h3 class="repo-title">${escapeHtml(repo.full_name)}</h3>
+                <p class="repo-desc">${escapeHtml(repo.description || 'Tidak ada deskripsi.')}</p>
+              </div>
+              <span class="badge ${repo.private ? 'private' : 'public'}">${repo.private ? 'Private' : 'Public'}</span>
+            </div>
+            <div class="badges">
+              ${repo.language ? `<span class="badge">${escapeHtml(repo.language)}</span>` : ''}
+              ${repo.fork ? `<span class="badge">Fork</span>` : ''}
+              <span class="badge">★ ${repo.stargazers_count || 0}</span>
+            </div>
+            <div class="meta">Updated: ${escapeHtml(updated)}</div>
+          </div>
+          <div>
+            <div class="actions">
+              <button class="btn" data-action="zip">Download ZIP</button>
+              <button class="btn secondary" data-action="clone">Copy Clone</button>
+            </div>
+            <a class="repo-link" href="${repo.html_url}" target="_blank" rel="noreferrer">Buka repo di GitHub</a>
+          </div>
+        `;
+        card.querySelector('[data-action="zip"]').addEventListener('click', () => downloadZip(repo));
+        card.querySelector('[data-action="clone"]').addEventListener('click', () => copyClone(repo));
+        repoGrid.appendChild(card);
+      });
+    }
+
+    async function fetchAllRepos() {
+      const token = tokenInput.value.trim();
+      if (!token) return;
+      setLoading(true);
+      setError('');
+      state.repos = [];
+      state.filtered = [];
+      renderRepos();
+      updateCounts();
+
+      try {
+        let page = 1;
+        let keepGoing = true;
+        const all = [];
+        while (keepGoing) {
+          const res = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}&sort=updated`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+          });
+
+          if (!res.ok) {
+            if (res.status === 401) throw new Error('Token tidak valid atau tidak punya izin yang dibutuhkan.');
+            if (res.status === 403) throw new Error('Akses ditolak atau kena rate limit GitHub API.');
+            throw new Error(`Gagal mengambil repo. HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          all.push(...data);
+          keepGoing = data.length === 100;
+          page += 1;
+        }
+
+        state.repos = all;
+        updateCounts();
+        filterRepos();
+      } catch (err) {
+        setError(err.message || 'Terjadi error.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function downloadZip(repo) {
+      const token = tokenInput.value.trim();
+      if (!token) return alert('Isi token dulu.');
+      const url = `https://api.github.com/repos/${repo.full_name}/zipball`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          redirect: 'follow',
+        });
+
+        if (!res.ok) throw new Error(`Gagal download ZIP (${res.status})`);
+
+        const blob = await res.blob();
+        const obj = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = obj;
+        a.download = `${repo.full_name.replace('/', '-')}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(obj);
+      } catch (err) {
+        alert(err.message || `Gagal download ${repo.full_name}`);
+      }
+    }
+
+    async function copyClone(repo) {
+      const token = tokenInput.value.trim();
+      if (!token) return alert('Isi token dulu.');
+      const cloneUrl = repo.private
+        ? `git clone https://oauth2:${token}@github.com/${repo.full_name}.git`
+        : `git clone ${repo.clone_url}`;
+      try {
+        await navigator.clipboard.writeText(cloneUrl);
+        alert('Clone command berhasil disalin.');
+      } catch {
+        alert('Gagal menyalin clone command.');
+      }
+    }
+
+    async function downloadAllZips() {
+      if (state.downloadingAll) return;
+      const repos = state.filtered;
+      if (!repos.length) return alert('Tidak ada repo untuk diunduh.');
+      state.downloadingAll = true;
+      downloadAllBtn.disabled = true;
+      downloadAllBtn.textContent = 'Mendownload...';
+      try {
+        for (const repo of repos) {
+          await downloadZip(repo);
+          await new Promise(r => setTimeout(r, 700));
+        }
+      } finally {
+        state.downloadingAll = false;
+        downloadAllBtn.disabled = false;
+        downloadAllBtn.textContent = 'Download semua ZIP';
+      }
+    }
+
+    fetchBtn.addEventListener('click', fetchAllRepos);
+    resetBtn.addEventListener('click', () => {
+      tokenInput.value = '';
+      searchInput.value = '';
+      forksInput.checked = true;
+      state.repos = [];
+      state.filtered = [];
+      setError('');
+      updateCounts();
+      renderRepos();
+      setLoading(false);
+    });
+    tokenInput.addEventListener('input', () => setLoading(false));
+    searchInput.addEventListener('input', filterRepos);
+    forksInput.addEventListener('change', filterRepos);
+    downloadAllBtn.addEventListener('click', downloadAllZips);
+    renderRepos();
+  </script>
+</body>
+</html>
